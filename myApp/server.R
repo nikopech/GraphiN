@@ -136,19 +136,11 @@ shinyServer(function(input,output,session){
          for (l in colnames(tempdata))
             choice=c(choice,l)
          names(choice)=colnames(tempdata)
-         selectInput("select1", label = h3("Select box"), choices = choice)
+         selectInput("select1", label = "Select a column", choices = choice)
         })
        
        
-       output$selectbox2<-renderUI({
-         tempdata=fulldata()
-         
-         choice=list()
-         for (l in colnames(tempdata))
-           choice=c(choice,l)
-         names(choice)=colnames(tempdata)
-         selectInput("select2", label = h3("Select box"), choices = choice)
-       })
+       
        
          
       output$textbox1<-renderUI({
@@ -156,25 +148,16 @@ shinyServer(function(input,output,session){
         selected=input$select1
         if (is.null(selected)) {return()}
         if (is.numeric(tempdata[,selected]))
-           {sliderInput("slider1", label = h3("Slider Range"), min = min(tempdata[,selected]), max = max(tempdata[,selected]), value = c(min(tempdata[,selected]),max(tempdata[,selected]) ))}
+           {sliderInput("slider1", label = "", min = min(tempdata[,selected]), max = max(tempdata[,selected]), value = c(min(tempdata[,selected]),max(tempdata[,selected]) ))}
         else
-            {textInput("text1","Insert Text")}
+            {textInput("text1","")}
         
         
         
         
         
       }) 
-      output$textbox2<-renderUI({
-        tempdata=fulldata()
-        selected=input$select2
-        if (is.null(selected)) {return()}
-        if (is.numeric(tempdata[,selected]))
-        {sliderInput("slider2", label = h3("Slider Range"), min = min(tempdata[,selected]), max = max(tempdata[,selected]), value = c(min(tempdata[,selected]),max(tempdata[,selected]) ))}
-        else
-        {textInput("text2","Insert Text")}
-      })
-        
+     
  
       
       
@@ -190,28 +173,19 @@ shinyServer(function(input,output,session){
                               {
                                 if(input$excludeButton[[1]]==0 & input$includeButton[[1]]==0) {return()}
                                 tempdata=fulldata()  
+                                
                                 if (isolate(values$flagEX)!=input$excludeButton[[1]]){
-                                    selected=input$select2
-                                    
-                                    if (is.numeric(tempdata[,selected])){
-                                        x=data.frame("Columns"=selected,"Keys"=paste0(input$slider2[1],",",input$slider2[2]),"I/E"="E")}
-                                    else{   
-                                        x=data.frame("Columns"=selected,"Keys"=input$text2,"I/E"="E")}
-                                    
-                                    filterg<<-rbind(filterg,x)
-                                    values$flagEX=input$excludeButton[[1]]
-                                    
-                                }
-                                else 
-                                  {
-                                    selected=input$select1
-                                    if (is.numeric(tempdata[,selected])){ 
-                                        x=data.frame("Columns"=selected,"Keys"=paste0(input$slider1[1],",",input$slider1[2]),"I/E"="I")}
-                                    else{
-                                        x=data.frame("Columns"=selected,"Keys"=input$text1,"I/E"="I")}
-                                    
-                                    filterg<<-rbind(filterg,x)
-                                    }
+                                    ie="E"
+                                    values$flagEX=input$excludeButton[[1]]}
+                                else {ie="I"}
+                                
+                                selected=input$select1
+                                if (is.numeric(tempdata[,selected])){ 
+                                  x=data.frame("Columns"=selected,"Keys"=paste0(input$slider1[1],",",input$slider1[2]),"I/E"=ie)}
+                                else{
+                                  x=data.frame("Columns"=selected,"Keys"=input$text1,"I/E"=ie)}
+                                
+                                filterg<<-rbind(filterg,x)
                                  values$filterdf<-filterg
                                 
                               })
@@ -389,10 +363,10 @@ shinyServer(function(input,output,session){
         updateSelectInput(session,"bordermst", label = "Select a column for border", choices = choice)
         updateSelectInput(session,"clusterSelect2",label="Select a clustering algorithm or a column",choices=c(choice[-1],list("Louvain"="louvain",
                                                                                                                            "Fast Greedy"="fast_greedy",
-                                                                                                                           "Label Propagation"="label_propgation",
+                                                                                                                           "Label Propagation"="label_propagation",
                                                                                                                            "Leading Eigenvalue"="leading_eigenvalue",
                                                                                                                            "Walktrap"="walktrap",
-                                                                                                                           "Edge Betweeness"="edge_betweeness")),selected = "louvain")
+                                                                                                                           "Edge Betweeness"="edge_betweenness")),selected = "louvain")
       })
      
       
@@ -582,7 +556,7 @@ shinyServer(function(input,output,session){
             igtemp=values$ig
             if (is.null(igtemp)){return()}
             clusterValues$comm1=communities_general(igtemp,algorithm =input$clusterSelect1)$membership
-            if (input$clusterSelect2 %in% c("louvain","fast_greedy","label_propgation","leading_eigenvalue","walktrap","edge_betweeness"))
+            if (input$clusterSelect2 %in% c("louvain","fast_greedy","label_propagation","leading_eigenvalue","walktrap","edge_betweenness"))
                 {clusterValues$comm2=communities_general(igtemp,algorithm =input$clusterSelect2)$membership}
             else {
                  clusterValues$comm2=get.vertex.attribute(igtemp,input$clusterSelect2)
