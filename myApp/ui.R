@@ -35,11 +35,32 @@ shinyUI(navbarPage("Navbar",
                   ),
                  fluidRow(
                    br(),
-                    sliderInput("slider", label = h3("Edge Threshold"), min = 0, 
-                               max = 1, value = 0.6),
+                   selectInput("seqSelect","Select the column of the sequence",choices=list("IMGT.gapped.nt.sequences.V.D.J.REGION"="IMGT.gapped.nt.sequences.V.D.J.REGION",
+                                                                                            "IMGT.gapped.AA.sequences.V.D.J.REGION"= "IMGT.gapped.AA.sequences.V.D.J.REGION",
+                                                                                            "IMGT.gapped.nt.sequences.V.J.REGION"="IMGT.gapped.nt.sequences.V.J.REGION", 
+                                                                                            "IMGT.gapped.AA.sequences.V.J.REGION"="IMGT.gapped.AA.sequences.V.J.REGION"),selected="IMGT.gapped.AA.sequences.V.D.J.REGION",width=350),
+                   
+                   selectInput("simSelect","Select the similarity metric",choices=list("OSA"="osa",
+                                                                                       "Levenshtein"= "lv",
+                                                                                       "Full DL"="dl", 
+                                                                                       "Hamming"="hamming",
+                                                                                       "LCS"="lcs",
+                                                                                       "Q-Gram"="qgram",
+                                                                                       "Cosine"="cosine",
+                                                                                       "Jaccard"="jaccard",
+                                                                                       "Jaro Winklar"="jw",
+                                                                                       "Soundex"="soundex"),selected="osa",width=350),
+                   
+                   checkboxInput(inputId = "clusterId", label = "Unique sequence-clusterID combination", value = FALSE),
+                   actionButton("simButton","Calculate distance matrix"),
+                   tags$head(tags$script(src = "message-handler.js")),
+                   sliderInput("slider", label = h3("Edge Threshold"), min = 0, max = 1, value = 0.6,step=0.001,width=500),
+                   
                    br(),
-                    actionButton("graphButton","Create Graph")
-                 
+                   actionButton("graphButton","Create Graph"),
+                   br(),br(),
+                   selectInput("componentSelect","Components",choices=list("no components"="")),
+                   actionButton("componentButton","Select a component")
                  
                  
                )   
@@ -74,6 +95,7 @@ shinyUI(navbarPage("Navbar",
                       column(3,
                          checkboxInput("ReverseButton","Reverse Filters"))
                             ),
+                   hr("Filtered Indexes"),
                    verbatimTextOutput("Indexes")
                     
                     ),
@@ -82,10 +104,17 @@ shinyUI(navbarPage("Navbar",
           tabPanel("MST",
                    
                    visNetworkOutput("mstnetwork"),
+                   column(1,
+                    plotOutput("mstLegend",width=500)),
+                   column(2,
+                    plotOutput("mstLegend2",width = 500)),  
                    selectInput("colormst","Select an attribute for background coloring",choices=c(Default="Default"),selected = "Default"),
                    selectInput("bordermst","Select an attribute for border coloring",choices=c(Default="Default"),selected = "Default"),
+                   checkboxInput("clusterMST","Coloring according to clusters",value=FALSE),
                    actionButton("mstButton","Create MST"),
+                   hr("Central Nodes"),
                    verbatimTextOutput("Cendroids"),
+                   hr("Link nodes"),
                    verbatimTextOutput("Links")
             
             
@@ -99,19 +128,59 @@ shinyUI(navbarPage("Navbar",
                      
                           tabPanel("Centralities",DT::dataTableOutput("Centralities")),
                           tabPanel("Rankings",DT::dataTableOutput("Rankings")),
-                          tabPanel("Summary",DT::dataTableOutput("Summary"))
-                     
-                        
-                     
-                     
-                     
-                     
-                   )
-                   
-                   
-                   
-                   
-          )
+                          tabPanel("Summary",DT::dataTableOutput("Summary")),
+                          tabPanel("Network",
+                                   selectInput("centralSelect","Select a centrality type",list('Degree'="Degree.Centrality",
+                                                                                                'Betweenness'="Shortest.Paths.Betweenness.Centrality",
+                                                                                                'Closeness'="Average.Distance",
+                                                                                                'Eigenvector'="eigenvector.centralities"),selected="Shortest.Paths.Betweenness.Centrality"),
+                                                                                                
+                                   visNetworkOutput("centralnetwork"),
+                                   hr("Note:Triangle indicates the most 'central' code."))
+                          )),
+          
+          
+          tabPanel("Clustering",
+                   tabsetPanel(
+                            tabPanel("Graph with clusters",
+                                  selectInput("clusterSelect","Select a clustering algorithm",list("Louvain"="louvain",
+                                                                                     "Fast Greedy"="fast_greedy",
+                                                                                     "Label Propagation"="label_propgation",
+                                                                                     "Leading Eigenvalue"="leading_eigenvalue",
+                                                                                     "Walktrap"="walktrap",
+                                                                                     "Edge Betweeness"="edge_betweeness"),selected = "louvain"),
+                                  fluidRow(
+                                    column(4,
+                                           visNetworkOutput("clusterNetwork")),
+                                    column(8,
+                                           plotOutput("intraHeatmap"))
+                                  )),
+                                  
+                             tabPanel("Confusion Matrix",
+                                  selectInput("clusterSelect1","Select a clustering algorithm",list("Louvain"="louvain",
+                                                                                    "Fast Greedy"="fast_greedy",
+                                                                                    "Label Propagation"="label_propgation",
+                                                                                    "Leading Eigenvalue"="leading_eigenvalue",
+                                                                                    "Walktrap"="walktrap",
+                                                                                    "Edge Betweeness"="edge_betweeness"),selected = "louvain"),
+                                  selectInput("clusterSelect2","Select a clustering algorithm",list("Louvain"="louvain",
+                                                                                    "Fast Greedy"="fast_greedy",
+                                                                                    "Label Propagation"="label_propgation",
+                                                                                    "Leading Eigenvalue"="leading_eigenvalue",
+                                                                                    "Walktrap"="walktrap",
+                                                                                    "Edge Betweeness"="edge_betweeness"),selected = "louvain"),
+                                
+                                  fluidRow(
+                                      column(4,
+                                          tableOutput("confusionMatrix")),
+                                      column(8,
+                                          plotOutput("interHeatmap"))
+                                          )
+                                
+                                     )
+                )
+           )
+          
 ))
                 
               
