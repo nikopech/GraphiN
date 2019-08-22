@@ -36,8 +36,7 @@ shinyUI(navbarPage("Navbar",
                               
                               
                               actionButton("simButton","Calculate distance matrix"),
-                              tags$head(tags$script(src = "message-handler.js")),
-                              sliderInput("slider", label = h3("Edge Threshold"), min = 0, max = 1, value = 0.6,step=0.001,width=500),
+                              sliderInput("slider", label = h3("Edge Threshold"), min = 0, max = 1, value = 0.25,step=0.001,width=500),
                               checkboxInput(inputId = "clusterId", label = "Unique sequence-clusterID combination", value = FALSE),
                               br(),
                               
@@ -100,15 +99,13 @@ shinyUI(navbarPage("Navbar",
           
           
           tabPanel("MST",
-                   
-                   visNetworkOutput("mstnetwork",height=600),
-                   column(1,
-                    plotOutput("mstLegend",width=250)),
+                   column(10,visNetworkOutput("mstnetwork",height=1000)),
                    column(2,
-                    plotOutput("mstLegend2",width = 250)),  
+                        plotOutput("mstLegend",width=350),
+                        plotOutput("mstLegend2",width = 350)),  
                    selectInput("colormst","Select an attribute for background coloring",choices=c(Default="Default"),selected = "Default"),
                    selectInput("bordermst","Select an attribute for border coloring",choices=c(Default="Default"),selected = "Default"),
-                   checkboxInput("clusterMST","Coloring according to clusters",value=FALSE),
+                   checkboxInput("clusterMST","Coloring according to clustering",value=FALSE),
                    actionButton("mstButton","Create MST"),
                    hr("Central Nodes"),
                    verbatimTextOutput("Cendroids"),
@@ -121,6 +118,7 @@ shinyUI(navbarPage("Navbar",
           
           tabPanel("Centralities",
                    actionButton("centralButton","Calculate Centralities"),
+                   checkboxInput("fastCButton","Only major centralities metrics"),
                    br(),br(),
                    tabsetPanel(
                      
@@ -128,14 +126,22 @@ shinyUI(navbarPage("Navbar",
                           tabPanel("Rankings",DT::dataTableOutput("Rankings")),
                           tabPanel("Summary",DT::dataTableOutput("Summary")),
                           tabPanel("Network",
-                                   selectInput("centralSelect","Select a centrality type",list('Degree'="Degree.Centrality",
-                                                                                                'Betweenness'="Shortest.Paths.Betweenness.Centrality",
-                                                                                                'Closeness'="Average.Distance",
-                                                                                                'Eigenvector'="eigenvector.centralities"),selected="Shortest.Paths.Betweenness.Centrality"),
-                                                                                                
-                                   visNetworkOutput("centralnetwork",height=800),
-                                   hr("Note:Triangle indicates the most 'central' code."))
-                          )),
+                                   column(10,
+                                           selectInput("centralSelect","Select a centrality type",list('Degree'="Degree.Centrality",
+                                                                                                        'Betweenness'="Shortest.Paths.Betweenness.Centrality",
+                                                                                                        'Closeness'="Average.Distance",
+                                                                                                        'Eigenvector'="eigenvector.centralities"),selected="Shortest.Paths.Betweenness.Centrality"),
+                                                                                                        
+                                           visNetworkOutput("centralnetwork",height=800),
+                                           hr("Note:Triangle indicates the most 'central' code.")),
+                                   column(2,
+                                          
+                                           checkboxInput("clusterCentral","Coloring according to clustering",value=FALSE),
+                                           selectInput("centralColor","Select an attribute for nodes color",choice=list("no attr"="")),plotOutput("centralLegend",width=300))
+                                          
+                                  )           
+                               )
+                   ),
           
           
           tabPanel("Clustering",
@@ -150,9 +156,24 @@ shinyUI(navbarPage("Navbar",
                                   fluidRow(
                                     column(8,
                                            visNetworkOutput("clusterNetwork",height=800)),
-                                    column(4,
+                                    column(2,
+                                           selectInput("clusterColor","Select an attribute for nodes color",choice=list("no attr"="")),plotOutput("clusterLegend",width=300)),
+                                    column(2,
                                            plotOutput("intraHeatmap"))
-                                  )),
+                                          ),
+                                  
+                                  fluidRow(
+                                    
+                                     column(4,plotOutput("silhouette")),
+                                     column(4,br(),br(),br(),verbatimTextOutput("metrics"),offset=2)
+                                    
+                                    
+                                    
+                                          )
+                            ),
+                               
+                            
+                            
                                   
                              tabPanel("Confusion Matrix",
                                   selectInput("clusterSelect1","Select a clustering algorithm",list("Louvain"="louvain",
