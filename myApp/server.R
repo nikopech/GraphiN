@@ -13,7 +13,7 @@ shinyServer(function(input,output,session){
         file1 <- input$file
         if(is.null(file1)){return()} 
         data=read.csv(file=file1$datapath, sep=input$sep, header = input$header)
-        data=data[sample(max(dim(data)),200, replace = FALSE),]
+        data=data[sample(max(dim(data)),50, replace = FALSE),]
         #sim=stringdistances(seq=as.character(data[,input$seqSelect]),algo=input$simSelect)
         values$indexes=1:nrow(data)
         data
@@ -91,6 +91,10 @@ shinyServer(function(input,output,session){
           values$forest=c()
           values$forest[1:gorder(values$ig)]=1
           updateSelectInput(session,"componentSelect",choices=list("1"=1),selected=1)
+          clusterValues$member=NULL
+          clusterValues$membership=vector(mode="list",length=7)
+          names(clusterValues$membership)=c("louvain","fast_greedy","label_propagation","leading_eigenvalue","walktrap","edge_betweenness","hierarchical")
+          updateSelectInput(session,"clusterSelect",selected=" ")
        })
   
         
