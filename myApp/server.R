@@ -21,15 +21,17 @@ shinyServer(function(input,output,session){
     
     
     sim<-eventReactive(input$simButton,{
-          print(system.time({sim=stringdistances(seq=as.character(fulldata()[,input$seqSelect]),algo=input$simSelect)}))
-          sim
+            
+            print(system.time({sim=stringdistances(seq=as.character(fulldata()[,input$seqSelect]),algo=input$simSelect)}))
+            shinyalert("Distances Calculated", type = "success")
+            sim
       
       })
   
     
     observeEvent(input$graphButton, {
           
-          templist=list(fulldata()[values$indexes,],sim()[values$indexes,values$indexes])
+         templist=list(fulldata()[values$indexes,],as.matrix(sim())[values$indexes,values$indexes])
           
          if (input$clusterId)
           { 
@@ -76,6 +78,9 @@ shinyServer(function(input,output,session){
           names(choices)=sort(values$forest)
           updateSelectInput(session,"componentSelect",choices=choices,selected=1)
           clusterValues$member=NULL
+          clusterValues$membership=vector(mode="list",length=7)
+          names(clusterValues$membership)=c("louvain","fast_greedy","label_propagation","leading_eigenvalue","walktrap","edge_betweenness","hierarchical")
+          updateSelectInput(session,"clusterSelect",selected=" ")
           })
     
     
@@ -101,7 +106,8 @@ shinyServer(function(input,output,session){
     
     
     output$network <- renderVisNetwork({
-          igtemp=values$ig
+          xx=input$visGraph
+          igtemp=isolate(values$ig)
           if (is.null(igtemp)) {return()}
           data_vertices=as_data_frame(igtemp,what=c("vertices"))[,c("value","label","color.border","color.background","id")]
           data_vertices=cbind(data_vertices,title=isolate(values$forest))
@@ -227,7 +233,23 @@ shinyServer(function(input,output,session){
                           
             if (is.null(values$filterdf)){return()}
             values$filterdf 
-                              })
+       })
+      
+      
+      output$downloadGraph <- downloadHandler(
+          filename = function() {
+              paste("graph.zip")
+            },
+          content = function(file) {
+              fileName<- paste("edges.csv")
+              write.csv(as_data_frame(values$ig)[,c("from","to","weight")], fileName, row.names = FALSE)
+              files=fileName
+              fileName<-paste("vertices.csv")
+              write.csv(V(values$ig)$label, fileName, row.names = FALSE)
+              files<-c(fileName,files)
+              zip(file,files)
+              
+      })
       
       
       
@@ -244,26 +266,7 @@ shinyServer(function(input,output,session){
               a=mstClustering(values$ig)
             
            
-              if ((input$clusterMST) & !is.null(clusterValues$member) ){   
-                    V(mstig)$color.background=colors[clusterValues$member]
-                    mstValues$legenddf=data.frame("label"=unique(clusterValues$member),"color"=(colors[unique(clusterValues$member)]))}
-                
-              else{  
-                    if (input$colormst=="Default")
-                        {V(mstig)$color.background="black"
-                         mstValues$legenddf=NULL}
-                    else
-                        {temp=visualiseGenes(get.vertex.attribute(mstig,input$colormst))
-                        V(mstig)$color.background=colors[temp$label]
-                        mstValues$legenddf=data.frame("label"=unique(temp$name),"color"=colors[unique(temp$label)])}}
               
-              if (input$bordermst=="Default")
-                    {V(mstig)$color.border="black" #colors[a$clusters]
-                    mstValues$legenddf2=NULL}
-              else
-                    {temp=visualiseGenes(get.vertex.attribute(mstig,input$bordermst))
-                    V(mstig)$color.border=colors[temp$label]
-                    mstValues$legenddf2=data.frame("label"=unique(temp$name),"color"=colors[unique(temp$label)])}
               
               V(mstig)$value=V(values$ig)$freq_cluster_id^(1/3.5)*1
               
@@ -274,7 +277,7 @@ shinyServer(function(input,output,session){
               n[a]="triangle"
               V(mstig)$shape=n[1:gorder(mstig)]
               V(mstig)$id=1:gorder(mstig)
-              mstValues$ig=list(vertices=as_data_frame(mstig,what="vertices")[,c("id","label","color.background","color.border","shape","value")],edges=as_data_frame(mstig))
+              mstValues$ig=list(vertices=as_data_frame(mstig,what="vertices")[,c("id","label","shape","value")],edges=as_data_frame(mstig))
               mstValues$centroids=V(mstig)$label[a] #a$centroids]
               mstValues$flag2=NULL
         
@@ -282,20 +285,46 @@ shinyServer(function(input,output,session){
       
       
       output$mstnetwork<-renderVisNetwork({
-        
-            if (is.null(mstValues$ig)) {return()}
+            xx=input$visMST
+            igtemp=isolate(mstValues$ig)
+            if (is.null(igtemp)) {return()}
     
-            coords=layout_with_stress(graph_from_data_frame(mstValues$ig[["edges"]],directed=FALSE,vertices=mstValues$ig[["vertices"]]))
+            coords=layout_with_stress(graph_from_data_frame(igtemp[["edges"]],directed=FALSE,vertices=igtemp[["vertices"]]))
+            
+            
+            isolate({
+                  if ((input$clusterMST) & !is.null(clusterValues$member) ){   
+                        cbg=colors[clusterValues$member]
+                        mstValues$legenddf=data.frame("label"=unique(clusterValues$member),"color"=(colors[unique(clusterValues$member)]))}
+                  
+                  else{  
+                        if (input$colormst=="Default"){
+                            cbg="black"
+                            mstValues$legenddf=NULL}
+                        else
+                            {temp=visualiseGenes(get.vertex.attribute(values$ig,input$colormst))
+                             cbg=colors[temp$label]
+                             mstValues$legenddf=data.frame("label"=unique(temp$name),"color"=colors[unique(temp$label)])}}
+                  
+                  if (input$bordermst=="Default")
+                        {cbor="black" #colors[a$clusters]
+                        mstValues$legenddf2=NULL}
+                  else
+                        {temp=visualiseGenes(get.vertex.attribute(values$ig,input$bordermst))
+                        cbor=colors[temp$label]
+                        mstValues$legenddf2=data.frame("label"=unique(temp$name),"color"=colors[unique(temp$label)])}
+           })
+            
             
             mstValues$flag2=c(1)
-            visNetwork(mstValues$ig[["vertices"]], mstValues$ig[["edges"]]) %>%
-              visEdges(color=list(color="black",highlight="red"),labelHighlightBold=FALSE)%>%
-              visNodes(borderWidth = 2) %>%
-              visOptions (nodesIdSelection = TRUE,highlightNearest = TRUE)   %>%
-              ##visPhysics(solver="forceAtlas2Based",forceAtlas2Based = list(gravitationalConstant=-2000,centralGravity=0.02,springLength=40,springConstant=0.4,damping=1,avoidOverlap=1)) %>%
-              visInteraction(multiselect = TRUE)%>%
-              visIgraphLayout(layout = "layout.norm", layoutMatrix = coords,smooth=FALSE,physics = FALSE) 
-     })
+            visNetwork(cbind(igtemp[["vertices"]],"color.background"=cbg,"color.border"=cbor), igtemp[["edges"]]) %>%
+                visEdges(color=list(color="black",highlight="red"),labelHighlightBold=FALSE)%>%
+                visNodes(borderWidth = 2) %>%
+                visOptions (nodesIdSelection = TRUE,highlightNearest = TRUE)   %>%
+                ##visPhysics(solver="forceAtlas2Based",forceAtlas2Based = list(gravitationalConstant=-2000,centralGravity=0.02,springLength=40,springConstant=0.4,damping=1,avoidOverlap=1)) %>%
+                visInteraction(multiselect = TRUE)%>%
+                visIgraphLayout(layout = "layout.norm", layoutMatrix = coords,smooth=FALSE,physics = FALSE) 
+       })
       
       
       output$mstLegend<-renderPlot({
@@ -398,6 +427,30 @@ shinyServer(function(input,output,session){
           
         })
         
+        
+        # output$downloadMST<- downloadHandler(
+        #   filename = function() {
+        #     paste("mst.zip")
+        #   },
+        #   content = function(file) {
+        #     fileName<- paste("mst-edges.csv")
+        #     write.csv(mstValues$ig[["edges"]][,c("from","to","weight")], fileName, row.names = FALSE)
+        #     files=fileName
+        #     fileName<-paste("mst-vertices.csv")
+        #     write.csv(mstValues$ig[["vertices"]][,"label"], fileName, row.names = FALSE)
+        #     files<-c(fileName,files)
+        #     zip(file,files)
+        #     
+        #   })
+
+         output$downloadMST <- downloadHandler(
+           filename = function() {
+             paste("mst.csv")
+           },
+           content = function(file) {
+             write.csv(mstValues$ig[["edges"]][,c("from")],file, row.names = FALSE)
+          }
+         )
         
         
         
@@ -559,30 +612,73 @@ shinyServer(function(input,output,session){
          })
          
          
+         output$downloadCentral <- downloadHandler(
+           filename = function() {
+             paste("centralities.zip")
+           },
+           content = function(file) {
+             fileName<- paste("centralities.csv")
+             write.csv(centralValues$centralities, fileName, row.names = FALSE)
+             files=fileName
+             fileName<-paste("rankings.csv")
+             write.csv(centralValues$rankings, fileName, row.names = FALSE)
+             files<-c(fileName,files)
+             fileName<-paste("summary.csv")
+             write.csv(centralValues$summary, fileName, row.names = FALSE)
+             files<-c(fileName,files)
+             zip(file,files)
+             
+           })
          
          
          
          
          
-         clusterValues=reactiveValues(member=NULL,comm1=NULL,comm2=NULL,legenddf=NULL)
+         
+         #centralities=data.frame(),rankings=data.frame(),summary=data.frame()
+         
+         clusterValues=reactiveValues(member=NULL,comm1=NULL,comm2=NULL,legenddf=NULL,membership=NULL)
          
          
+         observeEvent(input$clusterSelect,{
+           igtemp=values$ig
+           if (is.null(igtemp) ){return()}
+           if (input$clusterSelect==" ") {clusterValues$member=NULL}
+           else 
+                   {    
+                   if (is.null(clusterValues$membership[[input$clusterSelect]]))
+                       {id <<- showNotification(paste("Clustering Calculation..."), duration = NULL)
+                       print("cluster")
+                       print(system.time({model=communities_general(igtemp,algorithm =input$clusterSelect)}))
+                       clusterValues$membership[[input$clusterSelect]]=model$membership
+                       if (!is.null(id)){
+                            removeNotification(id)
+                            id <<- NULL}
+                       }
+                  clusterValues$member=clusterValues$membership[[input$clusterSelect]]
+                    }
+         })
+           
+         
+           
          output$clusterNetwork<-renderVisNetwork({
-               igtemp=values$ig
-               if (is.null(igtemp)){return()}
-               print("cluster")
-               print(system.time({model=communities_general(igtemp,algorithm =input$clusterSelect)}))
+               
+               xx=input$visCluster
+               igtemp=isolate(values$ig)
+               membertemp=isolate(clusterValues$member)
+               if (is.null(membertemp) | is.null(igtemp)) {return()}
                updateSelectInput(session,"clusterColor",selected="Default")
-               clusterValues$member=model$membership
-               V(igtemp)$grp=model$membership
+               
+               V(igtemp)$grp=membertemp
                print("layout")
                print(system.time({bb <- layout_as_backbone(igtemp,keep=0.4)}))
-               V(igtemp)$color=colors[model$membership]
+               V(igtemp)$color=colors[membertemp]
                
                data_vertices=cbind(as_data_frame(igtemp,what=c("vertices")))[,c("value","label","color")]
                data_vertices$id=rownames(data_vertices)
                data_edges=as_data_frame(igtemp,what=c("edges"))
                
+             
                
                visNetwork(data_vertices, data_edges) %>%
                  visOptions (nodesIdSelection = list("useLabels"=TRUE),highlightNearest = TRUE)   %>%
@@ -594,7 +690,7 @@ shinyServer(function(input,output,session){
          
          
          
-         observeEvent(input$clusterColor,{
+         observeEvent(paste(input$clusterColor,clusterValues$member),{
              if (is.null(values$ig)){return()}
              igtemp=values$ig
              if (input$clusterColor!="Default"){
@@ -602,10 +698,13 @@ shinyServer(function(input,output,session){
                   tempcolor=colors[temp$label]
                   clusterValues$legenddf=data.frame("label"=unique(temp$name),"color"=colors[unique(temp$label)])}
              else {
-                  tempcolor=colors[clusterValues$member]
-                  clusterValues$legenddf=NULL
+                  if (!is.null(clusterValues$member))
+                     {tempcolor=colors[clusterValues$member]}
+                  else
+                     {tempcolor=NULL}
+                      clusterValues$legenddf=NULL
              }
-             
+             if (is.null(tempcolor)){return()}
              visNetworkProxy("clusterNetwork") %>%
                visUpdateNodes(data.frame(id=1:gorder(igtemp),color=tempcolor))
            
@@ -625,6 +724,7 @@ shinyServer(function(input,output,session){
          output$metrics<-renderText({
            if (is.null(clusterValues$member)) {return()}
            igtemp=isolate(values$ig)
+           E(igtemp)$weight=1-E(igtemp)$weight
            mod=modularity(igtemp,clusterValues$member)
            con=conductance(igtemp,clusterValues$member)$conductance
            cov=coverage(igtemp,clusterValues$member)
@@ -644,6 +744,7 @@ shinyServer(function(input,output,session){
                   maxt=max(apply(dis,1,max))
                   dis[dis==0]=maxt+0.1
                   diag(dis)=0
+                  #dis=distances(isolate(values$ig))
                   temp=order(clusterValues$member)
                   dis=dis[temp,temp]
                   heatmap(dis, Rowv = NA, Colv = NA, col = heat.colors(256), revC = TRUE)
@@ -657,6 +758,7 @@ shinyServer(function(input,output,session){
                  maxt=max(apply(dis,1,max))
                  dis[dis==0]=maxt+0.1
                  diag(dis)=0
+                 #dis=distances(isolate(values$ig))
                  plot(silhouette(dist=dis,x=clusterValues$member))
          })
          
@@ -684,10 +786,22 @@ shinyServer(function(input,output,session){
                heatmap( t(prop.table(table(clusterValues$comm1,clusterValues$comm2))), Rowv = NA, Colv = NA, col = heat.colors(256)[256:1], revC = TRUE)
                
                 })
+         
+         
+         output$downloadCluster <- downloadHandler(
+               filename = function() {
+                 paste(input$clusterSelect,".csv",sep="")
+               },
+               content = function(file) {
+                 write.csv(clusterValues$member,file, row.names = FALSE)
+               })    
+         
+         
          })
 
-    
         
+        
+                
        
        
        

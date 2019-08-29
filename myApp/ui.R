@@ -1,11 +1,13 @@
 library(shiny)
 shinyUI(navbarPage("Navbar",
+           
            tabPanel("Graph Creation",
-        
+            
         
                   fluidRow(
-            
-            
+                    add_busy_bar(color = "#FF0000"),
+                    #add_busy_gif(src = "https://media.giphy.com/media/tXL4FHPSnVJ0A/giphy.gif", height = 120, width = 120),
+                    
                     titlePanel("File Input"),
                     sidebarLayout(
                          sidebarPanel(width=2,
@@ -31,10 +33,9 @@ shinyUI(navbarPage("Navbar",
                                                                                                   "Q-Gram"="qgram",
                                                                                                   "Cosine"="cosine",
                                                                                                   "Jaccard"="jaccard",
-                                                                                                  "Jaro Winklar"="jw",
-                                                                                                  "Soundex"="soundex"),selected="osa",width=350),
+                                                                                                  "Jaro Winklar"="jw"),selected="osa",width=350),
                               
-                              
+                              useShinyalert(),
                               actionButton("simButton","Calculate distance matrix"),
                               sliderInput("slider", label = h3("Edge Threshold"), min = 0, max = 1, value = 0.25,step=0.001,width=500),
                               checkboxInput(inputId = "clusterId", label = "Unique sequence-clusterID combination", value = FALSE),
@@ -49,12 +50,25 @@ shinyUI(navbarPage("Navbar",
                       mainPanel(
                               
                               tabsetPanel(
-                                    tabPanel("Graph",visNetworkOutput("network",height = 1000,width=2200)),
-                                    tabPanel("Data",numericInput("idInput","Insert the id",0), dataTableOutput("dataset"))
+                                    tabPanel("Graph",
+                                             div(style = "position:absolute;right:2em;", 
+                                                 br(),
+                                                 column(2,downloadButton("downloadGraph", "Download Graph")),
+                                                 column(2,offset=4,actionButton("visGraph", "Visualise Graph"))
+                                                 ),
+                                             visNetworkOutput("network",height = 1000,width=2200)
+                                            
+                                             ),
+                                    tabPanel("Data",
+                                             numericInput("idInput","Insert the id",0), 
+                                             dataTableOutput("dataset")
+                                             #,
+                                             #downloadButton("downloadGraph", "Download Graph")
+                                             )
                                     
                                     
                                     
-                                )
+                                      )
                                 
                         # use below code if you want the tabset programming in the main panel. If so, then tabset will appear when the app loads for the first time.
                         #       tabsetPanel(tabPanel("Summary", verbatimTextOutput("sum")),
@@ -63,6 +77,7 @@ shinyUI(navbarPage("Navbar",
                       
                     
                 column(5,
+                    br(),br(),   
                     fluidRow(style="background-color:WhiteSmoke;border-radius:5px;border-color=LightGrey;border-color=Black;border-width=thick;",
                   
                     
@@ -99,8 +114,20 @@ shinyUI(navbarPage("Navbar",
           
           
           tabPanel("MST",
-                   column(10,visNetworkOutput("mstnetwork",height=1000)),
+              fluidRow(
+                   
+                   #add_busy_gif(src = "https://media.giphy.com/media/tXL4FHPSnVJ0A/giphy.gif", height = 120, width = 120),
+                   
+                   column(10,
+                            div(style = "position:absolute;right:1em;", 
+                                 
+                                  column(2,downloadButton("downloadMST", "Download MST")),
+                                  column(2,offset=4,actionButton("visMST", "Visualise MST"))
+                                
+                                ),
+                            visNetworkOutput("mstnetwork",height=1000)),
                    column(2,
+                        br(),br(),
                         plotOutput("mstLegend",width=350),
                         plotOutput("mstLegend2",width = 350)),  
                    selectInput("colormst","Select an attribute for background coloring",choices=c(Default="Default"),selected = "Default"),
@@ -111,17 +138,23 @@ shinyUI(navbarPage("Navbar",
                    verbatimTextOutput("Cendroids"),
                    hr("Link nodes"),
                    verbatimTextOutput("Links")
-            
+              )
             
           ),
           
           
           tabPanel("Centralities",
+               fluidRow(
+                   
+                   
                    actionButton("centralButton","Calculate Centralities"),
                    checkboxInput("fastCButton","Only major centralities metrics"),
-                   br(),br(),
+                   div(style = "position:absolute;right:1em;", 
+                       downloadButton("downloadCentral", "Download Centralities")),
+                   br(),
+                   
                    tabsetPanel(
-                     
+                         
                           tabPanel("Centralities",DT::dataTableOutput("Centralities")),
                           tabPanel("Rankings",DT::dataTableOutput("Rankings")),
                           tabPanel("Summary",DT::dataTableOutput("Summary")),
@@ -141,20 +174,45 @@ shinyUI(navbarPage("Navbar",
                                           
                                   )           
                                )
+                        )
                    ),
           
           
           tabPanel("Clustering",
+                fluidRow(   
+                  
+                   
                    tabsetPanel(
                             tabPanel("Graph with clusters",
-                                  selectInput("clusterSelect","Select a clustering algorithm",list("Louvain"="louvain",
-                                                                                     "Fast Greedy"="fast_greedy",
-                                                                                     "Label Propagation"="label_propagation",
-                                                                                     "Leading Eigenvalue"="leading_eigenvalue",
-                                                                                     "Walktrap"="walktrap",
-                                                                                     "Edge Betweeness"="edge_betweenness"),selected = "louvain"),
+                                      tags$head(
+                                        tags$style(
+                                         HTML(".shiny-notification {
+                                                                 
+                                                                 position:fixed;
+                                                                 top: calc(40%);
+                                                                 left: calc(10%);
+                                                                  }"
+                                                )
+                                               )
+                                              ),
+                                 
+                                  selectInput("clusterSelect","Select a clustering algorithm",list("no algorithm"=" ",
+                                                                                                   "Louvain"="louvain",
+                                                                                                   "Fast Greedy"="fast_greedy",
+                                                                                                   "Label Propagation"="label_propagation",
+                                                                                                   "Leading Eigenvalue"="leading_eigenvalue",
+                                                                                                   "Walktrap"="walktrap",
+                                                                                                   "Edge Betweeness"="edge_betweenness",
+                                                                                                   "Hierarchical"="hierarchical"),selected = " "),
+                                  
                                   fluidRow(
                                     column(8,
+                                           div(style = "position:absolute;right:1em;",
+                                               column(2,downloadButton("downloadCluster","Download Membership")),
+                                               column(2,offset=4,actionButton("visCluster", "Visualise Clusters"))
+                                               
+                                               
+                                           ),   
                                            visNetworkOutput("clusterNetwork",height=800)),
                                     column(2,
                                            selectInput("clusterColor","Select an attribute for nodes color",choice=list("no attr"="")),plotOutput("clusterLegend",width=300)),
@@ -181,13 +239,15 @@ shinyUI(navbarPage("Navbar",
                                                                                     "Label Propagation"="label_propagation",
                                                                                     "Leading Eigenvalue"="leading_eigenvalue",
                                                                                     "Walktrap"="walktrap",
-                                                                                    "Edge Betweeness"="edge_betweenness"),selected = "louvain"),
+                                                                                    "Edge Betweeness"="edge_betweenness",
+                                                                                    "Hierarchical"="hierarchical"),selected = "louvain"),
                                   selectInput("clusterSelect2","Select a clustering algorithm",list("Louvain"="louvain",
                                                                                     "Fast Greedy"="fast_greedy",
                                                                                     "Label Propagation"="label_propagation",
                                                                                     "Leading Eigenvalue"="leading_eigenvalue",
                                                                                     "Walktrap"="walktrap",
-                                                                                    "Edge Betweeness"="edge_betweenness"),selected = "louvain"),
+                                                                                    "Edge Betweeness"="edge_betweenness",
+                                                                                    "Hierarchical"="hierarchical"),selected = "louvain"),
                                 
                                   fluidRow(
                                       column(4,
@@ -199,6 +259,7 @@ shinyUI(navbarPage("Navbar",
                                      )
                 )
            )
+          )
           
 ))
                 

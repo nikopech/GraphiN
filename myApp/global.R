@@ -1,5 +1,27 @@
 
-filterg=data.frame("Columns"=character(),"Keys"=character(),"I/E"=character(),stringsAsFactors = FALSE)
+#filterg=data.frame("Columns"=character(),"Keys"=character(),"I/E"=character(),stringsAsFactors = FALSE)
 #colors=colors()[c(85:131)*5]
-colors=c("green","yellow","red","blue","orange","purple","grey","pink","black","brown","gold")
-colors=colors[(1:200)%%10]
+library(dplyr)
+library(shiny) 
+library(stringdist)
+library(igraph)
+library(visNetwork)
+library(CINNA)
+library(DT)
+library(ggraph)
+library(graphlayouts)
+library(cluster)
+library(shinyalert)
+library(shinybusy)
+source('C:/Users/Paul Kallin/Desktop/busy/busy-indicator/helpers.R', echo=TRUE)
+source('C:/Users/Paul Kallin/Desktop/myApp/stringdistances.R', echo=TRUE)
+source('C:/Users/Paul Kallin/Desktop/myApp/visualisation.R', echo=TRUE)
+source('C:/Users/Paul Kallin/Desktop/myApp/filtered.R', echo=TRUE)
+source('C:/Users/Paul Kallin/Desktop/myApp/mstClustering.R', echo=TRUE)
+source('C:/Users/Paul Kallin/Desktop/myApp/multiple_clustering.R', echo=TRUE)
+source('C:/Users/Paul Kallin/Desktop/myApp/visual extended.R', echo=TRUE)
+source('C:/Users/Paul Kallin/Desktop/myApp/clusterMetrics.R', echo=TRUE)
+
+colors=c("green","yellow","red","blue","orange","purple","grey","pink","black","brown","lightblue")
+colors=rep(colors,19)
+id=NULL
