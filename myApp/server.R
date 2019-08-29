@@ -5,7 +5,7 @@
 
 shinyServer(function(input,output,session){
   
-  values <- reactiveValues(flagEX=0,filterdf=data.frame(Columns=character(),Keys=character(),"I/E"=character()),ig=NULL,indexes=c(),forest=c())
+  values <- reactiveValues(flagEX=0,filterdf=data.frame(Columns=character(),Keys=character(),"I/E"=character()),ig=NULL,indexes=c(),forest=c(),sim=NULL)
 
   # This reactive function will take the inputs from UI.R and use them for read.table() to read the data from the file. It returns the dataset in the form of a dataframe.
   # file$datapath -> gives the path of the file
@@ -20,18 +20,18 @@ shinyServer(function(input,output,session){
        })
     
     
-    sim<-eventReactive(input$simButton,{
+    observeEvent(input$simButton,{
             
             print(system.time({sim=stringdistances(seq=as.character(fulldata()[,input$seqSelect]),algo=input$simSelect)}))
             shinyalert("Distances Calculated", type = "success")
-            sim
+            values$sim=sim
       
       })
   
     
     observeEvent(input$graphButton, {
-          
-         templist=list(fulldata()[values$indexes,],as.matrix(sim())[values$indexes,values$indexes])
+         if (is.null(values$sim )) {return()}
+         templist=list(fulldata()[values$indexes,],as.matrix(values$sim)[values$indexes,values$indexes])
           
          if (input$clusterId)
           { 
