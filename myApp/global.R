@@ -13,6 +13,7 @@ library(graphlayouts)
 library(cluster)
 library(shinyalert)
 library(shinybusy)
+library(shinythemes)
 
 
 source('stringdistances.R', echo=TRUE)

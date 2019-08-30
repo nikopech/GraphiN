@@ -452,7 +452,7 @@ shinyServer(function(input,output,session){
              paste("mst.csv")
            },
            content = function(file) {
-             write.csv(mstValues$ig[["edges"]][,c("from")],file, row.names = FALSE)
+             write.csv(mstValues$ig[["edges"]][,c("from","to")],file, row.names = FALSE)
           }
          )
         
