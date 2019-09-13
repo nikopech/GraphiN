@@ -3,7 +3,6 @@
 
 conductance<-function(graph,membership)
 {
-  
   edges=as_data_frame(graph)
   edges$from=membership[edges$from]
   edges$to=membership[edges$to]
@@ -16,6 +15,7 @@ conductance<-function(graph,membership)
   }
   list (conductance=1-mean(con),conductances=con)
 }
+
 
 
 coverage<-function(graph,membership)

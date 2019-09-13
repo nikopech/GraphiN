@@ -57,13 +57,11 @@ subtractDatasets<-function(minuend,subtracter)
     for (l in x)
     {
       tempdata=c()
-     {
             if (!is.numeric(data[,l[1]]))
-            {
-              for (i in 2:length(l))
-              tempdata=rbind(tempdata,data[data[,l[1]]==l[i],]) }
+                tempdata=data[data[,l[1]] %in% l[2:length(l)],]
+             
             else 
-              {tempdata=rbind(tempdata,data[(data[,l[1]]>l[2] & data[,l[1]]<l[3] ),])}}
+                tempdata=data[(data[,l[1]]>l[2] & data[,l[1]]<l[3] ),]
       data=tempdata  
       }
      return (sort(data$id))   
@@ -80,9 +78,7 @@ excludeFromGraph<-function(data,x)
  
   for (l in x)
     if (!is.numeric(data[,l[1]]))
-    {for (i in 2:length(l))
-      data=data[-which(data[,l[1]]==l[i]),]
-    }
+      data=data[-which(data[,l[1]] %in% l[2:length(l)]),]
     else
       data=data[-which(data[,l[1]]>l[2] & data[,l[1]]<l[3]),]
   return (data$id)

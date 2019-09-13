@@ -139,6 +139,7 @@ shinyUI(
                                         column(2,offset=4,actionButton("visMST", "Visualise MST"))
                                       
                                       ),
+                                  selectInput("mstAlgoSelect",choices=list("Prim"="Prim","Kruskal"="Kruskal"),selected="Prim",label="Select MST algorithm"),
                                   visNetworkOutput("mstnetwork",height=1000)),
                          column(2,
                               br(),br(),
@@ -263,11 +264,19 @@ shinyUI(
                                                                                           "Hierarchical"="hierarchical"),selected = "louvain"),
                                       
                                         fluidRow(
-                                            column(4,
-                                                tableOutput("confusionMatrix")),
-                                            column(8,
-                                                plotOutput("interHeatmap"))
-                                                )
+                                          column(2,
+                                                 tableOutput("confusionMatrix1")),
+                                          column(2,
+                                                 tableOutput("confusionMatrix2")),
+                                            
+                                          column(4,
+                                                  verbatimTextOutput("metrics2"),
+                                                  br(),br(),br(),br(),
+                                                  selectInput("heatSelect",label="",choices=list("Overall"=0,"Conditional under clustering 1"=1,"Conditional under clustering 2"=2),selected=0),
+                                                  plotOutput("interHeatmap"))
+                                                
+                                            )
+                                            
                                       
                                            )
                       )
