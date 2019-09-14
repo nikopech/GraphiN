@@ -834,39 +834,52 @@ shinyServer(function(input,output,session){
          observe({
                 igtemp=values$ig
                 if (is.null(igtemp)){return()}
-                
-                
-                clusterValues$comm1=clusterValues$membership[[input$clusterSelect1]]#communities_general(igtemp,algorithm =input$clusterSelect1)$membership
+               
+                 clusterValues$comm1=clusterValues$membership[[input$clusterSelect1]]#communities_general(igtemp,algorithm =input$clusterSelect1)$membership
+    
                 if (input$clusterSelect2 %in% c("louvain","fast_greedy","label_propagation","leading_eigenvalue","walktrap","edge_betweenness")){
+                     
                      clusterValues$comm2=clusterValues$membership[[input$clusterSelect2]]}#communities_general(igtemp,algorithm =input$clusterSelect2)$membership}
                 else {
                      clusterValues$comm2=get.vertex.attribute(igtemp,input$clusterSelect2)}
+                
+                
+                #validate(
+                #  need(!(is.null(clusterValues$comm1) | is.null(clusterValues$comm2)), 'Check at least one letter!')
+                #)
             })
          
          
          output$confusionMatrix1<-renderTable({
-                if (is.null(clusterValues$comm1) | is.null(clusterValues$comm2)) {return()}
-                mat=as.data.frame(t(confusion(clusterValues$comm1,clusterValues$comm2)$mat1))
-                mat[,c(1,2)]<-mat[,c(2,1)]
-                isolate({colnames(mat)<-c(input$clusterSelect1,input$clusterSelect2,"Freq")})
-                mat
-                
+                #if (is.null(clusterValues$comm1) | is.null(clusterValues$comm2)) {return()}
+           
+           validate(
+             need(!(is.null(clusterValues$comm1) | is.null(clusterValues$comm2)), "One of the clusterings hasn't been calculated!")
+                 )
+           
+           mat=as.data.frame(t(confusion(clusterValues$comm1,clusterValues$comm2)$mat1))
+           mat[,c(1,2)]<-mat[,c(2,1)]
+           isolate({colnames(mat)<-c(input$clusterSelect1,input$clusterSelect2,"Freq")})
+           mat
+           
                 })
          
        
          
          output$confusionMatrix2<-renderTable  ({
-           if (is.null(clusterValues$comm1) | is.null(clusterValues$comm2)) {return()}
-           mat=as.data.frame(t(confusion(clusterValues$comm2,clusterValues$comm1)$mat1))
-           mat[,c(1,2)]<-mat[,c(2,1)]
-           isolate({colnames(mat)<-c(input$clusterSelect2,input$clusterSelect1,"Freq")})
-           mat
+           #if (is.null(clusterValues$comm1) | is.null(clusterValues$comm2)) {return()}
+               req(!(is.null(clusterValues$comm1) | is.null(clusterValues$comm2)))
+               mat=as.data.frame(t(confusion(clusterValues$comm2,clusterValues$comm1)$mat1))
+               mat[,c(1,2)]<-mat[,c(2,1)]
+               isolate({colnames(mat)<-c(input$clusterSelect2,input$clusterSelect1,"Freq")})
+               mat
            
          })
          
          output$metrics2<-renderText({
            
-               if (is.null(clusterValues$comm1) | is.null(clusterValues$comm2)) {return()}
+              # if (is.null(clusterValues$comm1) | is.null(clusterValues$comm2)) {return()}
+               req(!(is.null(clusterValues$comm1) | is.null(clusterValues$comm2)))
                nmi=NMI(clusterValues$comm1,clusterValues$comm2)
                ari=adj.rand.index(clusterValues$comm1,clusterValues$comm2)
                paste0("NMI:",nmi," ARI:",ari)
@@ -875,8 +888,8 @@ shinyServer(function(input,output,session){
          
          
          output$interHeatmap<-renderPlot({
-               if (is.null(clusterValues$comm1) | is.null(clusterValues$comm2)) {return()}
-               
+               #if (is.null(clusterValues$comm1) | is.null(clusterValues$comm2)) {return()}
+               req(!(is.null(clusterValues$comm1) | is.null(clusterValues$comm2)))
                
                if (input$heatSelect==0) 
                   x=NULL
