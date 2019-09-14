@@ -13,7 +13,7 @@ shinyServer(function(input,output,session){
         file1 <- input$file
         if(is.null(file1)){return()} 
         data=read.csv(file=file1$datapath, sep=input$sep, header = input$header)
-        data=data[sample(max(dim(data)),50, replace = FALSE),]
+        data=data[sample(max(dim(data)),300, replace = FALSE),]
         #sim=stringdistances(seq=as.character(data[,input$seqSelect]),algo=input$simSelect)
         values$indexes=1:nrow(data)
         data
@@ -121,6 +121,9 @@ shinyServer(function(input,output,session){
           xx=input$visGraph
           igtemp=isolate(values$ig)
           if (is.null(igtemp)) {return()}
+          
+          coords=layout_with_stress(igtemp)
+            
           data_vertices=as_data_frame(igtemp,what=c("vertices"))[,c("value","label","color.border","color.background","id")]
           data_vertices=cbind(data_vertices,title=isolate(values$forest))
           data_edges=as_data_frame(igtemp,what=c("edges"))
@@ -129,9 +132,10 @@ shinyServer(function(input,output,session){
             visOptions (nodesIdSelection = list("useLabels"=TRUE),selectedBy = list("variable"="title"),highlightNearest = TRUE)   %>%
             #visPhysics(solver="repulsion") %>%
             visInteraction(multiselect = TRUE)%>%
-            visIgraphLayout(layout = "layout_with_fr",smooth=FALSE,physics = FALSE) %>%
+            visIgraphLayout(layout = "layout.norm", layoutMatrix = coords,smooth=FALSE,physics = FALSE) %>%
+            #visIgraphLayout(layout = "layout_with_fr",smooth=FALSE,physics = FALSE) %>%
             visLegend(addNodes = data.frame()) 
-          htmlwidgets::saveWidget(graph, "network.html")
+          
           graph
          
           
@@ -305,7 +309,10 @@ shinyServer(function(input,output,session){
 
             if (is.null(values$ig)) {return()}
             igtemp=values$ig
-            edges=MST(igtemp,input$mstAlgoSelect)
+            if (input$mstAlgoSelect=="Kruskal")
+                  edges=MST(igtemp,input$mstAlgoSelect)
+            else
+                  edges=as_data_frame(mst(igtemp,algorithm = "prim"))
             
             #a=mstClustering(values$ig)
             ig=graph_from_data_frame(edges,directed=FALSE,vertices=as_data_frame(igtemp,what="vertices")[,c("id","label","value")])
@@ -347,6 +354,7 @@ shinyServer(function(input,output,session){
             degree=centr_degree(ig)
             centroids=which(degree$res>1/15*gorder(ig))
             coords=layout_with_stress(ig)
+            #coords=layout_with_kk(igtemp,coords = coords)
             
             V(ig)$id=V(ig)$name
             delete_vertex_attr(ig,"name")
@@ -377,7 +385,7 @@ shinyServer(function(input,output,session){
             
             
             mstValues$flag2=c(1)
-            visNetwork(cbind(as_data_frame(ig,what="vertices"),"color.background"=cbg,"color.border"=cbor,"shape"=mstValues$shape),cbind(as_data_frame(ig),"title"=E(ig)$width)) %>%
+            visNetwork(cbind(as_data_frame(ig,what="vertices"),"color.background"=cbg,"color.border"=cbor,"shape"=mstValues$shape),cbind(as_data_frame(ig),"title"=E(ig)$weight)) %>%
                 visEdges(color=list(color="black",highlight="red"),labelHighlightBold=FALSE)%>%
                 visNodes(borderWidth = 2) %>%
                 visOptions (nodesIdSelection = TRUE,highlightNearest = TRUE)   %>%
@@ -603,18 +611,20 @@ shinyServer(function(input,output,session){
                   
                   bc <- centralValues$centralities[,input$centralSelect]
                   if (input$centralSelect=="Average.Distance") {bc=1/bc}
-                  p1 <- ggraph(igtemp,layout = "centrality", cent = bc,iter = 500, tol = 1e-04) +
-                    draw_circle(use = "cent") +
-                    annotate_circle(bc,format="",pos="bottom") +
-                    geom_edge_link(edge_color="black",edge_width=0.3)+
-                    geom_node_point(aes(fill=as.factor(Faction)),size=2,shape=21)+
-                    scale_fill_manual(values=c("#8B2323", "#EEAD0E"))+
-                    theme_graph()+
-                    theme(legend.position = "none")+
-                    coord_fixed()+
-                    labs(title="betweenness centrality")
                   
-                  coords=cbind(x=p1$data$x,y=p1$data$y)
+                  coords=layout_with_centrality(igtemp,cent=bc,iter=500,tol=1e-04)
+                  # p1 <- ggraph(igtemp,layout = "centrality", cent = bc,iter = 500, tol = 1e-04) +
+                  #   draw_circle(use = "cent") +
+                  #   annotate_circle(bc,format="",pos="bottom") +
+                  #   geom_edge_link(edge_color="black",edge_width=0.3)+
+                  #   geom_node_point(aes(fill=as.factor(Faction)),size=2,shape=21)+
+                  #   scale_fill_manual(values=c("#8B2323", "#EEAD0E"))+
+                  #   theme_graph()+
+                  #   theme(legend.position = "none")+
+                  #   coord_fixed()+
+                  #   labs(title="betweenness centrality")
+                  # 
+                  # coords=cbind(x=p1$data$x,y=p1$data$y)
                   
                  
                   
