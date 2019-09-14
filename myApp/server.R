@@ -593,7 +593,7 @@ shinyServer(function(input,output,session){
                 centralValues$rankings
           
           
-         })
+         },rownames=FALSE)
       
          
          output$Summary<-DT::renderDataTable({
@@ -601,7 +601,7 @@ shinyServer(function(input,output,session){
                  if (is.null(centralValues$summary)) {return()}
                  centralValues$summary
            
-          })
+          },rownames=FALSE)
          
          output$centralnetwork<-renderVisNetwork({
            
@@ -860,7 +860,7 @@ shinyServer(function(input,output,session){
             })
          
          
-         output$confusionMatrix1<-renderTable({
+         output$confusionMatrix1<-DT::renderDataTable({
                 #if (is.null(clusterValues$comm1) | is.null(clusterValues$comm2)) {return()}
            
            validate(
@@ -876,7 +876,7 @@ shinyServer(function(input,output,session){
          
        
          
-         output$confusionMatrix2<-renderTable  ({
+         output$confusionMatrix2<-DT::renderDataTable  ({
            #if (is.null(clusterValues$comm1) | is.null(clusterValues$comm2)) {return()}
                req(!(is.null(clusterValues$comm1) | is.null(clusterValues$comm2)))
                mat=as.data.frame(t(confusion(clusterValues$comm2,clusterValues$comm1)$mat1))

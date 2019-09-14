@@ -265,15 +265,15 @@ shinyUI(
                                       
                                         fluidRow(
                                           column(2,
-                                                 tableOutput("confusionMatrix1")),
+                                                 DT::dataTableOutput("confusionMatrix1")),
                                           column(2,
-                                                 tableOutput("confusionMatrix2")),
+                                                 DT::dataTableOutput("confusionMatrix2"),offset=1),
                                             
                                           column(4,
                                                   verbatimTextOutput("metrics2"),
                                                   br(),br(),br(),br(),
                                                   selectInput("heatSelect",label="",choices=list("Overall"=0,"Conditional under clustering 1"=1,"Conditional under clustering 2"=2),selected=0),
-                                                  plotOutput("interHeatmap"))
+                                                  plotOutput("interHeatmap"),offset=1)
                                                 
                                             )
                                             
