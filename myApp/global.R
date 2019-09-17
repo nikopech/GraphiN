@@ -18,6 +18,9 @@ library(optrees)
 library(shallot)
 library(aricode)
 library(gplots)
+library(shinyFiles)
+
+
 
 source('stringdistances.R', echo=TRUE)
 source('visualisation.R', echo=TRUE)

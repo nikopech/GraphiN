@@ -9,20 +9,40 @@ shinyServer(function(input,output,session){
 
   # This reactive function will take the inputs from UI.R and use them for read.table() to read the data from the file. It returns the dataset in the form of a dataframe.
   # file$datapath -> gives the path of the file
-    fulldata <- eventReactive(input$file,{
-        file1 <- input$file
-        if(is.null(file1)){return()} 
+  
+  shinyFileChoose(input,"files",roots=getVolumes(),filetypes=c('',"txt","csv"))
+  
+  
+  fulldata <- eventReactive(input$files,{
+        file1<-parseFilePaths(getVolumes(),input$files)
+        #file1 <- input$file
+        if(length(file1$datapath)==0){return()} 
         data=read.csv(file=file1$datapath, sep=input$sep, header = input$header)
-        data=data[sample(max(dim(data)),300, replace = FALSE),]
+        data=data[sample(max(dim(data)),5000, replace = FALSE),]
         #sim=stringdistances(seq=as.character(data[,input$seqSelect]),algo=input$simSelect)
         values$indexes=1:nrow(data)
         data
-       })
-    
+  })
+  
+ 
+  
+  
+    # 
+    # # fulldata <- eventReactive(input$file,{
+    # #     file1 <- input$file
+    # #     if(is.null(file1)){return()} 
+    # #     data=read.csv(file=file1$datapath, sep=input$sep, header = input$header)
+    # #     data=data[sample(max(dim(data)),200, replace = FALSE),]
+    # #     #sim=stringdistances(seq=as.character(data[,input$seqSelect]),algo=input$simSelect)
+    # #     values$indexes=1:nrow(data)
+    # #     data
+    #    })
+    # 
     
     observeEvent(input$simButton,{
             
             print(system.time({sim=stringdistances(seq=as.character(fulldata()[,input$seqSelect]),algo=input$simSelect)}))
+            #print(system.time({sim=stringdistmatrix(fulldata()[,input$seqSelect],method=input$simSelect,useBytes = FALSE)}))
             shinyalert("Distances Calculated", type = "success")
             values$sim=sim
       
@@ -49,22 +69,24 @@ shinyServer(function(input,output,session){
           
           ig<- graph.adjacency(templist[[2]], mode="undirected", weighted=TRUE)
           ig=delete.edges(ig,which(E(ig)$weight>input$slider))
+          plot(ig)
           vertex.attributes(ig)<-as.list(templist[[1]])
           
-          V(ig)$value=V(ig)$freq_cluster_id^(1/3.5)/10
+          V(ig)$value=log10(V(ig)$freq_cluster_id/100)#V(ig)$freq_cluster_id^(1/3.5)
           
           V(ig)$color.background=colors[visualiseGenes(data=V(ig)$dataName)$label]
           V(ig)$color.border=V(ig)$color.background
-        
+          V(ig)$title<-paste("Sequence frequence cluster_id: ",V(ig)$freq_cluster_id)
           
           m=(1-E(ig)$weight-min(1-E(ig)$weight))/(max(1-E(ig)$weight)-min(1-E(ig)$weight))
           
           
           E(ig)$width <- m*2.5
-          E(ig)$title<-E(ig)$weight
+          E(ig)$title<-paste("Edge weight: ",E(ig)$weight)
           
           V(ig)$id=1:gorder(ig)
           V(ig)$label<-rownames(templist[[1]])
+          
           forest=components(ig,mode="weak")
           
           x=forest[[1]]
@@ -74,6 +96,7 @@ shinyServer(function(input,output,session){
           x=match(x,sort(unique(x),na.last = TRUE))
           values$forest=x
           values$ig=ig
+        
           choices=as.list(sort(values$forest))
           names(choices)=sort(values$forest)
           updateSelectInput(session,"componentSelect",choices=choices,selected=1)
@@ -124,10 +147,10 @@ shinyServer(function(input,output,session){
           
           coords=layout_with_stress(igtemp)
             
-          data_vertices=as_data_frame(igtemp,what=c("vertices"))[,c("value","label","color.border","color.background","id")]
-          data_vertices=cbind(data_vertices,title=isolate(values$forest))
+          data_vertices=get.data.frame(igtemp,what=c("vertices"))[,c("value","label","color.border","color.background","id")]
           data_edges=as_data_frame(igtemp,what=c("edges"))
-          graph<-visNetwork(data_vertices, data_edges) %>%
+          
+          graph<-visNetwork(cbind(data_vertices,"title"=paste(V(igtemp)$title,"<br>Component ",isolate(values$forest))), data_edges) %>%
             visEdges(color=list(color="black",highlight="red"),labelHighlightBold=FALSE)%>%
             visOptions (nodesIdSelection = list("useLabels"=TRUE),selectedBy = list("variable"="title"),highlightNearest = TRUE)   %>%
             #visPhysics(solver="repulsion") %>%
@@ -146,6 +169,7 @@ shinyServer(function(input,output,session){
           
           
     output$selectbox1<-renderUI({
+          req(fulldata())
           tempdata=fulldata()
          
           choice=list()
@@ -161,6 +185,7 @@ shinyServer(function(input,output,session){
          
     output$textbox1<-renderUI({
           tempdata=fulldata()
+          req(fulldata())
           selected=input$select1
           if (is.null(selected)) {return()}
           if (is.numeric(tempdata[,selected]))
@@ -315,7 +340,7 @@ shinyServer(function(input,output,session){
                   edges=as_data_frame(mst(igtemp,algorithm = "prim"))
             
             #a=mstClustering(values$ig)
-            ig=graph_from_data_frame(edges,directed=FALSE,vertices=as_data_frame(igtemp,what="vertices")[,c("id","label","value")])
+            ig=graph_from_data_frame(edges,directed=FALSE,vertices=as_data_frame(igtemp,what="vertices")[,c("id")])
             
             degree=centr_degree(ig)
             centroids=which(degree$res>1/15*gorder(ig))
@@ -349,7 +374,7 @@ shinyServer(function(input,output,session){
             edges=mstValues$edges
             if (is.null(edges) | is.null(igtemp)) {return()}
             
-            ig=graph_from_data_frame(edges,directed=FALSE,vertices=as_data_frame(igtemp,what="vertices")[,c("id","label","value")])
+            ig=graph_from_data_frame(edges,directed=FALSE,vertices=as_data_frame(igtemp,what="vertices")[,c("id","label","value","title")])
             
             degree=centr_degree(ig)
             centroids=which(degree$res>1/15*gorder(ig))
@@ -385,9 +410,9 @@ shinyServer(function(input,output,session){
             
             
             mstValues$flag2=c(1)
-            visNetwork(cbind(as_data_frame(ig,what="vertices"),"color.background"=cbg,"color.border"=cbor,"shape"=mstValues$shape),cbind(as_data_frame(ig),"title"=E(ig)$weight)) %>%
+            visNetwork(cbind(as_data_frame(ig,what="vertices"),"color.background"=cbg,"color.border"=cbor,"shape"=mstValues$shape),cbind(as_data_frame(ig),"title"=paste("Edge weight: ",E(ig)$weight))) %>%
                 visEdges(color=list(color="black",highlight="red"),labelHighlightBold=FALSE)%>%
-                visNodes(borderWidth = 2) %>%
+                visNodes(borderWidth = 2.5) %>%
                 visOptions (nodesIdSelection = TRUE,highlightNearest = TRUE)   %>%
                 ##visPhysics(solver="forceAtlas2Based",forceAtlas2Based = list(gravitationalConstant=-2000,centralGravity=0.02,springLength=40,springConstant=0.4,damping=1,avoidOverlap=1)) %>%
                 visInteraction(multiselect = TRUE)%>%
@@ -639,7 +664,7 @@ shinyServer(function(input,output,session){
                   updateSelectInput(session,"centralColor",selected="dataName")
                   updateCheckboxInput(session,"clusterCentral",value=FALSE)
                   
-                  data_vertices=cbind(as_data_frame(igtemp,what=c("vertices"))[,c("value","label")],shape=i[1:gorder(igtemp)],color=colors[temp$label])
+                  data_vertices=cbind(as_data_frame(igtemp,what=c("vertices"))[,c("value","label","title")],shape=i[1:gorder(igtemp)],color=colors[temp$label])
                   data_vertices$id=rownames(data_vertices)
                   data_edges=data.frame(from=1,to=2,weight=1)
                   
@@ -751,7 +776,7 @@ shinyServer(function(input,output,session){
                print(system.time({bb <- layout_as_backbone(igtemp,keep=0.4)}))
                V(igtemp)$color=colors[membertemp]
                
-               data_vertices=cbind(as_data_frame(igtemp,what=c("vertices")))[,c("value","label","color")]
+               data_vertices=cbind(as_data_frame(igtemp,what=c("vertices")))[,c("value","label","color","title")]
                data_vertices$id=rownames(data_vertices)
                data_edges=as_data_frame(igtemp,what=c("edges"))
                
@@ -872,7 +897,7 @@ shinyServer(function(input,output,session){
            isolate({colnames(mat)<-c(input$clusterSelect1,input$clusterSelect2,"Freq")})
            mat
            
-                })
+                },rownames=FALSE)
          
        
          
@@ -884,7 +909,7 @@ shinyServer(function(input,output,session){
                isolate({colnames(mat)<-c(input$clusterSelect2,input$clusterSelect1,"Freq")})
                mat
            
-         })
+         },rownames=FALSE)
          
          output$metrics2<-renderText({
            

@@ -25,8 +25,9 @@ shinyUI(
                           titlePanel(""),
                           sidebarLayout(
                                sidebarPanel(width=2,
-                                    fileInput("file","Upload the file"), # fileinput() function is used to get the file upload contorl option
-                                    helpText("Default max. file size is 5MB"),
+                                    shinyFilesButton("files","Insert a file","Insert a file",multiple=FALSE),
+                                    #fileInput("file","Upload the file"), # fileinput() function is used to get the file upload contorl option
+                                    # helpText("Default max. file size is 5MB"),
                                     tags$hr(),
                                     h5(helpText("Select the read.table parameters below")),
                                     checkboxInput(inputId = 'header', label = 'Header', value = TRUE),
@@ -197,7 +198,7 @@ shinyUI(
                         
                          
                          tabsetPanel(
-                                  tabPanel("Graph with clusters",
+                                  tabPanel("Clustering Analysis",
                                             tags$head(
                                               tags$style(
                                                HTML(".shiny-notification {
@@ -247,7 +248,7 @@ shinyUI(
                                   
                                   
                                         
-                                   tabPanel("Confusion Matrix",
+                                   tabPanel("Clustering Crossover",
                                         selectInput("clusterSelect1","Select a clustering algorithm",list("Louvain"="louvain",
                                                                                           "Fast Greedy"="fast_greedy",
                                                                                           "Label Propagation"="label_propagation",
