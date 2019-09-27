@@ -5,21 +5,21 @@
 
 
 uniteDatasets<-function(...)
-  {
-    x=list(...)
-    dataset=c()
-    for (i in 1:length(x))
-      dataset=rbind(dataset,x[i])
-    dataset=as.data.frame(unique(dataset))
-    return (dataset)
+{
+  x=list(...)
+  dataset=c()
+  for (i in 1:length(x))
+    dataset=rbind(dataset,x[i])
+  dataset=as.data.frame(unique(dataset))
+  return (dataset)
 }
 
 subtractDatasets<-function(minuend,subtracter)
-  {
+{
   minuend=setdiff(minuend,subtracter)
   return (minuend)
-  }
-  
+}
+
 
 # includeInGraph<-function(dataset,Summary.D.GENE.and.allele=NULL,Summary.J.GENE.and.allele=NULL,Summary.V.GENE.and.allele=NULL)
 #   {
@@ -43,50 +43,46 @@ subtractDatasets<-function(minuend,subtracter)
 #     for (i in 1:length(Summary.V.GENE.and.allele))
 #       data=rbind(data,dataset[dataset$Summary.V.GENE.and.allele==Summary.V.GENE.and.allele[i],])
 #   } 
-  
- # return(data)
- #  }
-  
-  
-  
- includeInGraph<-function(data,x)
-  {
-    
-    data=cbind(data,id=c(1:nrow(data)))
-    
-    for (l in x)
-    {
-      tempdata=c()
-            if (!is.numeric(data[,l[1]]))
-                tempdata=data[data[,l[1]] %in% l[2:length(l)],]
-             
-            else 
-                tempdata=data[(data[,l[1]]>l[2] & data[,l[1]]<l[3] ),]
-      data=tempdata  
-      }
-     return (sort(data$id))   
-    }
-    
-    
-    
-  
 
-excludeFromGraph<-function(data,x)
+# return(data)
+#  }
+
+
+
+includeInGraph<-function(data,x)
 {
   
   data=cbind(data,id=c(1:nrow(data)))
- 
+  
   for (l in x)
+  {
+    tempdata=c()
     if (!is.numeric(data[,l[1]]))
-      data=data[-which(data[,l[1]] %in% l[2:length(l)]),]
-    else
-      data=data[-which(data[,l[1]]>l[2] & data[,l[1]]<l[3]),]
-  return (data$id)
+      tempdata=data[data[,l[1]] %in% l[2:length(l)],]
+    
+    else 
+      tempdata=data[(data[,l[1]]>l[2] & data[,l[1]]<l[3] ),]
+    data=tempdata  
+  }
+  return (sort(data$id))   
 }
 
 
 
 
+
+excludeFromGraph<-function(data,x)
+{
+  
+  data=cbind(data,id=c(1:nrow(data)))
+  
+  for (l in x)
+    if (!is.numeric(data[,l[1]]))
+      data=data[-which(data[,l[1]] %in% l[2:length(l)]),]
+    else
+      data=data[-which(data[,l[1]]>l[2] & data[,l[1]]<l[3]),]
+    return (data$id)
+}
 
 
 

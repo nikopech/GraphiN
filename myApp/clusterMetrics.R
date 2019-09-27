@@ -1,6 +1,7 @@
 #clustering metrics 
 
 
+
 conductance<-function(graph,membership)
 {
   edges=as_data_frame(graph)
@@ -8,13 +9,20 @@ conductance<-function(graph,membership)
   edges$to=membership[edges$to]
   con=c()
   total=sum(edges$weight)
-  for (i in sort(unique(membership))){     
-            inter=sum(edges$weight[xor(edges$to==i,edges$from==i)])
-            clust=sum(edges$weight[edges$to==i | edges$from==i])
-            con=c(con,inter/min(total-clust,clust))
+  
+  conduct<-function(i,edges,total)
+  {     
+    inter=sum(edges$weight[xor(edges$to==i,edges$from==i)])
+    clust=sum(edges$weight[edges$to==i | edges$from==i])
+    con=c(con,inter/min(total-clust,clust))
   }
-  list (conductance=1-mean(con),conductances=con)
+  
+  con<-lapply(sort(unique(membership)),conduct,edges=edges,total=total)
+  
+  
+  list (conductance=1-mean(unlist(con)),conductances=con)
 }
+
 
 
 
@@ -25,4 +33,3 @@ coverage<-function(graph,membership)
   edges$to=membership[edges$to]
   return(sum(edges$weight[edges$from==edges$to])/sum(edges$weight))
 }
-  

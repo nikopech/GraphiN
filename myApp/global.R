@@ -19,7 +19,7 @@ library(shallot)
 library(aricode)
 library(gplots)
 library(shinyFiles)
-
+library(shinyBS)
 
 
 source('stringdistances.R', echo=TRUE)
