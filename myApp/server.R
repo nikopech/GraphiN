@@ -1,4 +1,3 @@
-
 #tempdata=data[data[,l[1]] %in% l[2:length(l)]]
 
 # use the below options code if you wish to increase the file input limit, in this example file input limit is increased from 5MB to 9MB
@@ -11,11 +10,11 @@ shinyServer(function(input,output,session){
   # This reactive function will take the inputs from UI.R and use them for read.table() to read the data from the file. It returns the dataset in the form of a dataframe.
   # file$datapath -> gives the path of the file
   
-  shinyFileChoose(input,"files",roots=getVolumes(),filetypes=c('',"txt","csv"))
+  shinyFileChoose(input,"files",roots=c(root='~'),filetypes=c('',"txt","csv"))
   
   
   fulldata <- eventReactive(input$files,{
-    file1<-parseFilePaths(getVolumes(),input$files)
+    file1<-parseFilePaths(roots=c(root='~'),input$files)
     #file1 <- input$file
     if(length(file1$datapath)==0){return()} 
     data=read.csv(file=as.character(file1$datapath), sep=input$sep, header = input$header)
@@ -88,6 +87,19 @@ shinyServer(function(input,output,session){
     
     V(ig)$value=log10(V(ig)$freq_cluster_id/100)#V(ig)$freq_cluster_id^(1/3.5)
     
+    myFun<-function(x)
+    {
+      if (length(x)==0)
+        return (NA)
+      else
+        return (x[1])
+    }
+    
+    V(ig)$V.GENE=as.character(unlist(lapply(strsplit(as.character(V(ig)$Summary.V.GENE.and.allele),"*",fixed=TRUE), myFun)))
+    V(ig)$J.GENE=as.character(unlist(lapply(strsplit(as.character(V(ig)$Summary.J.GENE.and.allele),"*",fixed=TRUE), myFun)))
+    V(ig)$D.GENE=as.character(unlist(lapply(strsplit(as.character(V(ig)$Summary.D.GENE.and.allele),"*",fixed=TRUE), myFun)))
+    
+    
     V(ig)$color.background=colors[visualiseGenes(data=V(ig)$dataName)$label]
     V(ig)$color.border=V(ig)$color.background
     V(ig)$title<-paste("Sequence frequence cluster_id: ",V(ig)$freq_cluster_id,"<br>V.Gene: ",V(ig)$Summary.V.GENE.and.allele,"<br>CDR3: ",V(ig)$Summary.AA.JUNCTION)
@@ -157,18 +169,60 @@ shinyServer(function(input,output,session){
     if (input$idInput!=0)
     {temp=temp[input$idInput==rownames(temp),]}
     temp
-    
   })
   
   
   observeEvent(values$ig,{
     
     
-    output$graphMeasure<-renderText(paste("Order:",gorder(values$ig)," Size:" ,ecount(values$ig)))
+    output$graphMeasure<-renderText(
+      paste("Order:",gorder(values$ig)," Size:" ,ecount(values$ig))
+    )
+    
+    
+    
+    
     
     
     
   },ignoreInit=TRUE)
+  
+  
+  
+  
+  
+  
+  output$adj<-DT::renderDataTable({
+    
+    igtemp=values$ig
+    x=adjacent_vertices(igtemp,1:gorder(igtemp))
+    
+    myFun<-function(x,ig){
+      x=as.numeric(x)
+      x=V(ig)$label[x]
+      neigh=paste(x,collapse=",")
+      return (neigh)
+    }
+    
+    data.frame("Neighbours"=unlist(lapply(x,myFun,igtemp)),row.names=V(igtemp)$label)
+    
+  })
+  
+  
+  
+  
+  
+  
+  
+  #      output$adjacency<-renderDataTable({
+  # 
+  #   igtemp=values$ig
+  #   x=adjacent_vertices(igtemp,1:gorder(igtemp))
+  #   as.data.frame(x)
+  # 
+  # 
+  # })
+  
   
   
   
@@ -336,6 +390,7 @@ shinyServer(function(input,output,session){
   })
   
   
+  
   output$downloadGraph <- downloadHandler(
     filename = function() {
       paste("graph.zip")
@@ -378,29 +433,6 @@ shinyServer(function(input,output,session){
   mstValues<-reactiveValues(edges=NULL,centroids=NULL,clusters=NULL,flag2=NULL,legenddf=NULL,legenddf2=NULL,shape=NULL)
   
   
-  # observeEvent(input$mstButton,{
-  # 
-  #         if (is.null(values$ig)) {return()}
-  #         mstig=mst(values$ig,algorithm='prim')
-  #         a=mstClustering(values$ig)
-  # 
-  # 
-  # 
-  # 
-  #         V(mstig)$value=V(values$ig)$freq_cluster_id^(1/3.5)*1
-  # 
-  #         m=(1- E(mstig)$weight-min(1-E(mstig)$weight))/(max(1-E(mstig)$weight)-min(1-E(mstig)$weight))
-  #         E(mstig)$width <- m*2.5
-  #         n=c()
-  #         n[gorder(mstig)+1]=1
-  #         n[a]="triangle"
-  #         V(mstig)$shape=n[1:gorder(mstig)]
-  #         V(mstig)$id=1:gorder(mstig)
-  #         mstValues$ig=list(vertices=as_data_frame(mstig,what="vertices")[,c("id","label","shape","value")],edges=as_data_frame(mstig))
-  #         mstValues$centroids=V(mstig)$label[a] #a$centroids]
-  #         mstValues$flag2=NULL
-  # 
-  # },ignoreInit = TRUE)
   
   
   observeEvent(input$mstButton,{
@@ -438,6 +470,32 @@ shinyServer(function(input,output,session){
     mstValues$flag2=NULL
     
   },ignoreInit = TRUE)
+  
+  
+  
+  
+  
+  
+  output$adj2<-DT::renderDataTable({
+    req(mstValues$edges,isolate(values$ig))
+    edges=mstValues$edges
+    igtemp=isolate(values$ig)
+    ig=graph_from_data_frame(edges,directed=FALSE,vertices=as_data_frame(igtemp,what="vertices")[,c("id","label")])
+    x=adjacent_vertices(ig,1:gorder(ig))
+    
+    
+    
+    
+    myFun<-function(x,ig){
+      x=as.numeric(x)
+      x=V(ig)$label[x]
+      neigh=paste(x,collapse=",")
+      return (neigh)
+    }
+    
+    data.frame("Neighbours"=unlist(lapply(x,myFun,ig)),row.names=V(ig)$label)
+    
+  })
   
   
   output$mstnetwork<-renderVisNetwork({
@@ -541,6 +599,7 @@ shinyServer(function(input,output,session){
         choice=c(choice,l)
         
       }}
+    choice=c(choice,"V.GENE","J.GENE","D.GENE")
     names(choice)=c("Default",unlist(choice)[-1])
     updateSelectInput(session,"colormst", label = "Select an attribute  for nodes background coloring", choices = choice)
     updateSelectInput(session,"bordermst", label = "Select an attribute for nodes border coloring", choices = choice)
@@ -696,7 +755,7 @@ shinyServer(function(input,output,session){
         positions_first=match(x[,i],central_ranked[,i])
         positions_last=match(x[,i],central_ranked[nrow(x):1,i])
         positions=(positions_first-positions_last+nrow(x)+1)/2}
-      
+      return(positions)
     }))
     positions<-as.data.frame(lapply(1:length(x),ranks,central_ranked=central_ranked,x=x))
     

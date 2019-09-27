@@ -14,7 +14,8 @@ conductance<-function(graph,membership)
   {     
     inter=sum(edges$weight[xor(edges$to==i,edges$from==i)])
     clust=sum(edges$weight[edges$to==i | edges$from==i])
-    con=c(con,inter/min(total-clust,clust))
+    con=inter/min(total-clust,clust)
+    return(con)
   }
   
   con<-lapply(sort(unique(membership)),conduct,edges=edges,total=total)

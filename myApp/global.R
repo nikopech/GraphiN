@@ -38,6 +38,8 @@ source('MST.R')
 # source('C:/Users/Paul Kallin/Desktop/myApp/visual extended.R', echo=TRUE)
 # source('C:/Users/Paul Kallin/Desktop/myApp/clusterMetrics.R', echo=TRUE)
 
-colors=c("green","yellow","red","blue","orange","purple","grey","pink","black","brown","lightblue")
-colors=rep(colors,19)
+colors=unique(gsub('[0-9]+','', colors()))
+colors=colors[length(colors):1]
+# colors=c("green","yellow","red","blue","orange","purple","grey","pink","black","brown","lightblue")
+# colors=rep(colors,19)
 id=NULL

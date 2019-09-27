@@ -32,7 +32,7 @@ shinyUI(
                                                  h5(helpText("Select the read.table parameters below")),
                                                  checkboxInput(inputId = 'header', label = 'Header', value = TRUE),
                                                  br(),
-                                                 radioButtons(inputId = 'sep', label = 'Separator', choices = c(Comma=',',Semicolon=';',Tab='\t', Space=''), selected = ','),
+                                                 radioButtons(inputId = 'sep', label = 'Separator', choices = c(Comma=',',Semicolon=';',Tab='\t', Space=''), selected = ''),
                                                  br(),br(),br(),
                                                  br(),
                                                  selectInput("seqSelect","Select the column of the sequence",choices=list("IMGT.gapped.nt.sequences.V.D.J.REGION"="IMGT.gapped.nt.sequences.V.D.J.REGION",
@@ -87,6 +87,10 @@ shinyUI(
                                                  dataTableOutput("dataset")
                                                  #,
                                                  #downloadButton("downloadGraph", "Download Graph")
+                                        ),
+                                        
+                                        tabPanel("Adjacency",
+                                                 dataTableOutput("adj")
                                         )
                                         
                                         
@@ -167,7 +171,9 @@ shinyUI(
                                   checkboxInput("clusterMST","Coloring according to clustering",value=FALSE),
                                   actionButton("mstButton","Create MST"),
                                   hr("Central Nodes"),
-                                  verbatimTextOutput("Cendroids")
+                                  verbatimTextOutput("Cendroids"),
+                                  br(),
+                                  dataTableOutput("adj2")
                                   
                                 )
                                 
