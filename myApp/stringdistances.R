@@ -1,21 +1,14 @@
+
 stringdistances<-function(seq,algo){
-
-
-  sim=diag(0,length(seq) , length(seq))
-
-  for (i in 1:(length(seq)-1)){
-    for (j in (i+1):(length(seq))){
-      sim[i,j]=1-stringsim(seq[i],seq[j], method = algo, useBytes = FALSE)
-      if (sim[i,j]==0) {sim[i,j]=0.00001}
-      sim[j,i]=sim[i,j]
-    }}
-
-  return (sim)}
-
-
-# stringdistances<-function(seq,algo){
-# 
-#   sim=stringdistmatrix(seq,method=algo,useBytes = FALSE)
-# 
-#   
-#   return (as.dist(sim))}
+  sim=stringdistmatrix(seq,method=algo,useBytes = FALSE,q=2)
+  if (algo %in% c("dl","lv","osa","lcs","hamming","qgram")){
+    if (algo %in% c("lcs","qgram"))
+      funn=sum
+    else 
+      funn=max
+    lengths=nchar(as.character(seq))
+    normal=as.vector(combn(lengths,2,FUN=funn))
+    sim=sim/normal
+  }
+  return (sim)
+}

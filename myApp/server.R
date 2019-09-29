@@ -18,7 +18,7 @@ shinyServer(function(input,output,session){
     #file1 <- input$file
     if(length(file1$datapath)==0){return()} 
     data=read.csv(file=as.character(file1$datapath), sep=input$sep, header = input$header)
-    data=data[sample(1:nrow(data),500, replace = FALSE),]
+    data=data[sample(1:nrow(data),50, replace = FALSE),]
     #sim=stringdistances(seq=as.character(data[,input$seqSelect]),algo=input$simSelect)
     values$indexes=1:nrow(data)
     values$uni=NULL
@@ -32,17 +32,7 @@ shinyServer(function(input,output,session){
     
     #print(system.time({sim=stringdistances(seq=as.character(fulldata()[,input$seqSelect]),algo=input$simSelect)}))
     print(system.time(
-      {sim=stringdistmatrix(fulldata()[,input$seqSelect],method=input$simSelect,useBytes = FALSE,q=2)
-      
-      
-      #sim=sim/nchar(as.character(fulldata()[1,input$seqSelect]))
-      
-      
-      lengths=nchar(as.character(fulldata()[,input$seqSelect]))
-      normal=as.vector(combn(lengths,2,FUN=max))
-      sim=sim/normal
-      
-      
+      {sim=stringdistances(fulldata()[,input$seqSelect],algo=input$simSelect)
       sim[sim==0]=0.00001
       shinyalert("Distances Calculated", type = "success")
       }))
