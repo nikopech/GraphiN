@@ -5,7 +5,7 @@ options(shiny.maxRequestSize = 200*1024^2)
 
 shinyServer(function(input,output,session){
   
-  values <- reactiveValues(flagEX=0,filterdf=data.frame(Columns=character(),Keys=character(),"I/E"=character()),ig=NULL,indexes=c(),forest=c(),sim=NULL,uni=NULL)
+  values <- reactiveValues(flagEX=0,filterdf=data.frame(Columns=character(),Keys=character(),"I/E"=character()),ig=NULL,indexes=c(),forest=c(),sim=NULL,uni=NULL,uniframe=NULL)
   
   # This reactive function will take the inputs from UI.R and use them for read.table() to read the data from the file. It returns the dataset in the form of a dataframe.
   # file$datapath -> gives the path of the file
@@ -50,15 +50,21 @@ shinyServer(function(input,output,session){
     if (input$clusterId){
       
       if (is.null(values$uni))
-        
       { 
+        
+        
         uni=unique(templist[[1]][,c(input$seqSelect,"cluster_id")])
         ind=1
+        uniset=which(templist[[1]][,input$seqSelect]==uni[1,1] & templist[[1]][,"cluster_id"]==uni[1,2])
+        univec=paste(rownames(templist[[1]])[uniset[-1]],collapse=",")
         for (i in 2:nrow(uni))
         { floorindex=ind[i-1]+1
-        ind=c(ind,ind[i-1]+min(which(templist[[1]][floorindex:nrow(templist[[1]]),input$seqSelect]==uni[i,1] & templist[[1]][floorindex:nrow(templist[[1]]),"cluster_id"]==uni[i,2] )))}
-        
-        values$uni=ind   
+        uniset=which(templist[[1]][floorindex:nrow(templist[[1]]),input$seqSelect]==uni[i,1] & templist[[1]][floorindex:nrow(templist[[1]]),"cluster_id"]==uni[i,2])
+        univec=c(univec,paste(rownames(templist[[1]])[ind[i-1]+uniset[-1]],collapse=","))
+        ind=c(ind,ind[i-1]+uniset[1])
+        }
+        values$uni=ind 
+        values$uniframe=data.frame("Same Combination"=univec,row.names=rownames(templist[[1]])[ind])
       }
       else 
         ind=values$uni
@@ -163,17 +169,9 @@ shinyServer(function(input,output,session){
   
   
   observeEvent(values$ig,{
-    
-    
     output$graphMeasure<-renderText(
       paste("Order:",gorder(values$ig)," Size:" ,ecount(values$ig))
     )
-    
-    
-    
-    
-    
-    
     
   },ignoreInit=TRUE)
   
@@ -195,6 +193,14 @@ shinyServer(function(input,output,session){
     }
     
     data.frame("Neighbours"=unlist(lapply(x,myFun,igtemp)),row.names=V(igtemp)$label)
+    
+  })
+  
+  
+  
+  
+  output$uni<-renderDataTable({
+    values$uniframe
     
   })
   
@@ -387,10 +393,10 @@ shinyServer(function(input,output,session){
     },
     content = function(file) {
       fileName<- paste("edges.csv")
-      write.csv(as_data_frame(values$ig)[,c("from","to","weight")], fileName, row.names = FALSE)
+      write.table(as_data_frame(values$ig)[,c("from","to","weight")], fileName, row.names = FALSE)
       files=fileName
       fileName<-paste("vertices.csv")
-      write.csv(V(values$ig)$label, fileName, row.names = FALSE)
+      write.table(V(values$ig)$label, fileName, row.names = FALSE)
       files<-c(fileName,files)
       zip(file,files)
       
@@ -696,7 +702,7 @@ shinyServer(function(input,output,session){
       paste("mst.csv")
     },
     content = function(file) {
-      write.csv(mstValues$ig[["edges"]][,c("from","to")],file, row.names = FALSE)
+      write.table(mstValues$edges[,c("from","to")],file, row.names = FALSE,sep="\t")
     }
   )
   
@@ -744,9 +750,10 @@ shinyServer(function(input,output,session){
       ranks<-function(i,central_ranked,x){
         positions_first=match(x[,i],central_ranked[,i])
         positions_last=match(x[,i],central_ranked[nrow(x):1,i])
-        positions=(positions_first-positions_last+nrow(x)+1)/2}
-      return(positions)
+        return (positions_first-positions_last+nrow(x)+1)/2}
+      
     }))
+    
     positions<-as.data.frame(lapply(1:length(x),ranks,central_ranked=central_ranked,x=x))
     
     colnames(positions)=colnames(x)
@@ -874,13 +881,13 @@ shinyServer(function(input,output,session){
     },
     content = function(file) {
       fileName<- paste("centralities.csv")
-      write.csv(centralValues$centralities, fileName, row.names = FALSE)
+      write.table(centralValues$centralities, fileName, row.names = FALSE,sep="\t")
       files=fileName
       fileName<-paste("rankings.csv")
-      write.csv(centralValues$rankings, fileName, row.names = FALSE)
+      write.table(centralValues$rankings, fileName, row.names = FALSE,sep="\t")
       files<-c(fileName,files)
       fileName<-paste("summary.csv")
-      write.csv(centralValues$summary, fileName, row.names = FALSE)
+      write.table(centralValues$summary, fileName, row.names = FALSE,sep="\t")
       files<-c(fileName,files)
       zip(file,files)
       
@@ -1144,23 +1151,12 @@ shinyServer(function(input,output,session){
   
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  output$downloadCluster <- downloadHandler(
+output$downloadCluster <- downloadHandler(
     filename = function() {
       paste(input$clusterSelect,".csv",sep="")
     },
     content = function(file) {
-      write.csv(clusterValues$member,file, row.names = FALSE)
+      write.csv(clusterValues$member,file, row.names = FALSE,sep="\t")
     })    
   
   

@@ -32,7 +32,7 @@ shinyUI(
                                                  h5(helpText("Select the read.table parameters below")),
                                                  checkboxInput(inputId = 'header', label = 'Header', value = TRUE),
                                                  br(),
-                                                 radioButtons(inputId = 'sep', label = 'Separator', choices = c(Comma=',',Semicolon=';',Tab='\t', Space=''), selected = ''),
+                                                 radioButtons(inputId = 'sep', label = 'Separator', choices = c(Comma=',',Semicolon=';',Tab='\t', Space=''), selected = ','),
                                                  br(),br(),br(),
                                                  br(),
                                                  selectInput("seqSelect","Select the column of the sequence",choices=list("IMGT.gapped.nt.sequences.V.D.J.REGION"="IMGT.gapped.nt.sequences.V.D.J.REGION",
@@ -91,9 +91,11 @@ shinyUI(
                                         
                                         tabPanel("Adjacency",
                                                  dataTableOutput("adj")
+                                        ),
+                                        
+                                        tabPanel("Unique Combo",
+                                                 dataTableOutput("uni")
                                         )
-                                        
-                                        
                                         
                                       )
                                       
